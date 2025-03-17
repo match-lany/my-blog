@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-    <rect width="32" height="32" rx="6" fill="#3B82F6"/>
-    <!-- 跑步者剪影 - 新设计 -->
-    <path d="M10 6a3 3 0 100-6 3 3 0 000 6zm-2 2l-4 3 3 2-2 3 4 1 2-3 1 4h3l-1-6 3-2-2-2H8z" 
-          fill="white" 
-          transform="translate(10,8) scale(1.2)"/>
-</svg> 
