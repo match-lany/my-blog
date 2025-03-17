@@ -1,6 +1,15 @@
 import { API_CONFIG } from '@/config/api'
 import type { ChatConfig } from '@/types/chat'
 
+// 调试环境变量
+console.log('环境变量检查 (deepseek.ts):', {
+  hasEnvVar: !!process.env.DEEPSEEK_API_KEY,
+  envVarLength: process.env.DEEPSEEK_API_KEY ? process.env.DEEPSEEK_API_KEY.length : 0,
+  envVarPrefix: process.env.DEEPSEEK_API_KEY ? process.env.DEEPSEEK_API_KEY.substring(0, 4) : 'none',
+  apiConfigKey: API_CONFIG.API_KEY ? API_CONFIG.API_KEY.substring(0, 4) + '...' : 'none',
+  apiConfigKeyFull: API_CONFIG.API_KEY // 临时显示完整API密钥用于调试
+})
+
 interface Message {
   role: 'system' | 'user' | 'assistant'
   content: string
@@ -13,14 +22,35 @@ export class DeepseekAPI {
 
   constructor(mockMode = false) {
     this.baseUrl = API_CONFIG.BASE_URL
+    
+    // 使用环境变量中的API密钥
     this.apiKey = API_CONFIG.API_KEY
-    this.mockMode = mockMode
+    
+    // 如果API密钥为空，尝试直接从环境变量获取
+    if (!this.apiKey && process.env.DEEPSEEK_API_KEY) {
+      console.log('从环境变量直接获取API密钥')
+      this.apiKey = process.env.DEEPSEEK_API_KEY
+    }
+    
+    // 检查API密钥是否有效
+    const hasValidApiKey = this.apiKey && this.apiKey.length > 10 && this.apiKey.startsWith('sk-')
+    
+    // 如果没有有效的API密钥且未启用模拟模式，则自动启用模拟模式
+    if (!hasValidApiKey && !mockMode) {
+      console.warn('未检测到有效的API密钥，自动启用模拟模式')
+      this.mockMode = true
+    } else {
+      // 使用传入的mockMode参数
+      this.mockMode = mockMode
+    }
+    
     console.log('DeepseekAPI initialized:', { 
       baseUrl: this.baseUrl, 
       mockMode: this.mockMode,
       hasApiKey: !!this.apiKey,
       apiKeyLength: this.apiKey ? this.apiKey.length : 0,
-      apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 8) : 'none'
+      apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 8) : 'none',
+      hasValidApiKey
     })
     
     // 确保 API 密钥格式正确
@@ -47,106 +77,164 @@ export class DeepseekAPI {
       stream: true
     }
 
+    // 确保 API 密钥格式正确
+    const apiKey = this.apiKey.startsWith('Bearer ') ? this.apiKey : `Bearer ${this.apiKey}`
+    
+    // 调试API密钥
+    console.log('API密钥检查:', {
+      apiKeyLength: this.apiKey ? this.apiKey.length : 0,
+      apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 4) : 'none',
+      formattedKeyPrefix: apiKey.substring(0, 10) + '...',
+      isEmpty: !this.apiKey
+    })
+
     console.log('Sending request to Deepseek API:', {
       url: `${this.baseUrl}/chat/completions`,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey.substring(0, 8)}...`
+        'Authorization': `Bearer ${this.apiKey.substring(0, 4)}...`
       },
       body: requestBody
     })
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify(requestBody)
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorText
-      })
-      throw new Error(`API 请求失败: ${response.status} ${response.statusText}\n${errorText}`)
+    // 检查API密钥是否有效
+    if (!this.apiKey || this.apiKey.length < 10) {
+      console.error('API密钥无效，无法发送请求')
+      throw new Error('API密钥无效，请在环境变量中配置有效的API密钥')
     }
 
-    return response
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': apiKey
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API request failed: ', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        })
+        throw new Error(`API 请求失败: ${response.status} \n${errorText}`)
+      }
+
+      return response
+    } catch (error) {
+      console.error('API 调用错误: ', error)
+      throw error
+    }
   }
 
   async streamChatCompletion(
     messages: Message[],
     config: ChatConfig,
     onMessage: (content: string) => void,
-    onError: (error: Error) => void
-  ) {
+    onError: (error: Error) => void,
+    onComplete: () => void
+  ): Promise<void> {
     console.log('streamChatCompletion called:', { 
-      mockMode: this.mockMode,
+      mockMode: this.mockMode, 
       messagesCount: messages.length,
       config
     })
 
-    try {
-      if (this.mockMode) {
-        console.log('Using mock response')
-        const mockResponse = `收到您的消息："${messages[messages.length - 1].content}"，我是模拟的回复。\n\nprint("Hello, World!")`
-        for (let i = 0; i < mockResponse.length; i++) {
-          await new Promise(resolve => setTimeout(resolve, 50))
-          onMessage(mockResponse[i])
+    if (this.mockMode) {
+      console.log('使用模拟模式')
+      
+      // 获取用户最后一条消息
+      const userMessage = messages.length > 0 ? 
+        messages[messages.length - 1].content.toLowerCase() : ''
+      
+      // 根据用户消息生成不同的模拟回复
+      let mockResponse = ''
+      
+      if (userMessage.includes('你好') || userMessage.includes('嗨') || 
+          userMessage.includes('hi') || userMessage.includes('hello')) {
+        mockResponse = '你好！我是AI助手。由于当前处于模拟模式，我的回答是预设的。要使用真实API，请确保配置了有效的API密钥。有什么我可以帮助你的吗？'
+      } 
+      else if (userMessage.includes('介绍') || userMessage.includes('是谁') || 
+               userMessage.includes('功能')) {
+        mockResponse = '我是DeepSeek AI助手，目前处于模拟模式。在这个模式下，我的回答是预设的，而不是通过API生成的。要使用完整功能，请配置有效的API密钥。我可以帮助回答问题、编写代码、解释概念等。'
+      }
+      else if (userMessage.includes('代码') || userMessage.includes('编程') || 
+               userMessage.includes('程序')) {
+        mockResponse = '这是一个简单的JavaScript函数示例：\n\n```javascript\nfunction calculateSum(a, b) {\n  return a + b;\n}\n\nconsole.log(calculateSum(5, 3)); // 输出: 8\n```\n\n请注意，我目前处于模拟模式，无法生成复杂的代码。要获取更好的编程帮助，请配置有效的API密钥。'
+      }
+      else {
+        mockResponse = '感谢你的提问。由于当前处于模拟模式（未检测到有效的API密钥），我只能提供预设的回答。要获取更准确的回复，请在环境变量中配置有效的DeepSeek API密钥。有其他问题吗？'
+      }
+      
+      // 模拟流式响应
+      let currentIndex = 0
+      const interval = setInterval(() => {
+        if (currentIndex < mockResponse.length) {
+          const char = mockResponse[currentIndex]
+          onMessage(char)
+          currentIndex++
+        } else {
+          clearInterval(interval)
+          onComplete()
         }
-        return
-      }
+      }, 20) // 每20毫秒发送一个字符
+      
+      return
+    }
 
-      // 确保最后一条消息是用户消息
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role !== 'user') {
-        console.error('最后一条消息不是用户消息，这可能导致 API 请求失败');
-        // 过滤掉最后一条非用户消息
-        messages = messages.filter((msg, index) => 
-          index < messages.length - 1 || msg.role === 'user'
-        );
-      }
-
-      console.log('Calling real API with messages:', messages)
+    try {
       const response = await this.chatCompletion(messages, config)
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-
-      if (!reader) {
-        throw new Error('无法读取响应流')
+      
+      if (!response.body) {
+        throw new Error('Response body is null')
       }
 
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      
+      let buffer = ''
+      
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value)
-        console.log('Received chunk:', chunk)
-        const lines = chunk.split('\n')
-
+        
+        if (done) {
+          onComplete()
+          break
+        }
+        
+        buffer += decoder.decode(value, { stream: true })
+        
+        // 处理数据块
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6)
-            if (data === '[DONE]') break
-
+            
+            if (data === '[DONE]') {
+              onComplete()
+              return
+            }
+            
             try {
               const parsed = JSON.parse(data)
               const content = parsed.choices[0]?.delta?.content || ''
+              
               if (content) {
                 onMessage(content)
               }
             } catch (e) {
-              console.error('解析响应数据失败:', e, 'Raw data:', data)
+              console.error('Error parsing JSON:', e)
             }
           }
         }
       }
     } catch (error) {
-      console.error('API 调用错误:', error)
+      console.error('Error in streamChatCompletion:', error)
       onError(error instanceof Error ? error : new Error(String(error)))
     }
   }

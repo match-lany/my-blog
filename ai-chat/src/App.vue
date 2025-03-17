@@ -159,6 +159,13 @@ const handleSendMessage = async () => {
           pending: false,
           error: true
         })
+      },
+      () => {
+        // 完成回调
+        chatStore.updateMessage(aiMessageId, {
+          pending: false
+        })
+        scrollToBottom()
       }
     )
   } catch (error) {

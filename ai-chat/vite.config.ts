@@ -7,6 +7,13 @@ export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd())
   
+  console.log('构建模式:', mode)
+  console.log('环境变量:', {
+    hasApiKey: !!env.DEEPSEEK_API_KEY,
+    apiKeyLength: env.DEEPSEEK_API_KEY ? env.DEEPSEEK_API_KEY.length : 0,
+    apiKeyPrefix: env.DEEPSEEK_API_KEY ? env.DEEPSEEK_API_KEY.substring(0, 4) : 'none'
+  })
+  
   return {
     plugins: [vue()],
     base: './',
