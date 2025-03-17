@@ -23,4 +23,7 @@ export default defineConfig({
       },
     },
   },
+  define: {
+    'process.env.DEEPSEEK_API_KEY': JSON.stringify(process.env.DEEPSEEK_API_KEY)
+  }
 }) 
