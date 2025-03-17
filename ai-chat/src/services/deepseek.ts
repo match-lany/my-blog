@@ -19,8 +19,14 @@ export class DeepseekAPI {
       baseUrl: this.baseUrl, 
       mockMode: this.mockMode,
       hasApiKey: !!this.apiKey,
+      apiKeyLength: this.apiKey ? this.apiKey.length : 0,
       apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 8) : 'none'
     })
+    
+    // 确保 API 密钥格式正确
+    if (this.apiKey && !this.apiKey.startsWith('sk-')) {
+      console.warn('API 密钥格式可能不正确，应该以 sk- 开头')
+    }
   }
 
   async chatCompletion(
