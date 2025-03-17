@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --wechat-green: #07C160;
+  --wechat-bg: #F5F5F5;
+}
+
+body {
+  @apply bg-wechat-bg min-h-screen;
+}
+
+.message-bubble {
+  @apply rounded-lg p-3 max-w-[70%] break-words;
+}
+
+.user-message {
+  @apply bg-wechat-green text-white self-end;
+}
+
+.ai-message {
+  @apply bg-white border border-gray-200 self-start;
+}
+
+.markdown-body {
+  @apply text-sm leading-6;
+}
+
+.markdown-body pre {
+  @apply bg-gray-800 text-white p-4 rounded-lg my-2 overflow-x-auto;
+} 
