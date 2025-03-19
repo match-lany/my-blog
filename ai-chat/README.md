@@ -45,8 +45,14 @@ cp .env.example .env.local
 编辑 `.env.local` 文件：
 
 ```env
-DEEPSEEK_API_KEY=your-api-key-here
+VITE_DEEPSEEK_API_KEY=your-api-key-here
 ```
+
+> ⚠️ **安全警告** ⚠️
+> 
+> - 永远不要将包含API密钥的 `.env` 文件提交到公共仓库
+> - 请确保 `.env`、`.env.local` 和 `.env.production` 文件已添加到 `.gitignore`
+> - 如果意外提交了API密钥，请立即在服务提供商处重置您的密钥
 
 4. 启动开发服务器：
 
@@ -59,6 +65,14 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## 部署说明
+
+在生产环境部署时，请使用环境变量或服务器配置来设置API密钥，而不是提交包含实际密钥的配置文件。
+
+### Vercel 部署
+
+在 Vercel 中，可以在项目设置的 Environment Variables 部分添加 `VITE_DEEPSEEK_API_KEY` 环境变量。
 
 ## 使用说明
 

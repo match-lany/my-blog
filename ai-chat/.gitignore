@@ -11,8 +11,11 @@ node_modules
 dist
 dist-ssr
 *.local
-.env.local
-.env.production
+
+# 环境变量文件 - 不要提交这些文件，它们可能包含敏感信息
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

@@ -1,13 +1,13 @@
 import { API_CONFIG } from '@/config/api'
 import type { ChatConfig } from '@/types/chat'
+import {API_CONFIG} from '@/config/api'
+import type {Message, UserMessage, AssistantMessage} from '@/types/chat'
 
 // 调试环境变量
 console.log('环境变量检查 (deepseek.ts):', {
-  hasEnvVar: !!process.env.DEEPSEEK_API_KEY,
-  envVarLength: process.env.DEEPSEEK_API_KEY ? process.env.DEEPSEEK_API_KEY.length : 0,
-  envVarPrefix: process.env.DEEPSEEK_API_KEY ? process.env.DEEPSEEK_API_KEY.substring(0, 4) : 'none',
-  apiConfigKey: API_CONFIG.API_KEY ? API_CONFIG.API_KEY.substring(0, 4) + '...' : 'none',
-  apiConfigKeyFull: API_CONFIG.API_KEY // 临时显示完整API密钥用于调试
+  hasEnvVar: !!import.meta.env.VITE_DEEPSEEK_API_KEY,
+  envVarLength: import.meta.env.VITE_DEEPSEEK_API_KEY?.length,
+  envVarPrefix: import.meta.env.VITE_DEEPSEEK_API_KEY?.substring(0, 4)
 })
 
 interface Message {
@@ -15,45 +15,36 @@ interface Message {
   content: string
 }
 
+// 定义DeepSeek API接口
 export class DeepseekAPI {
-  private baseUrl: string
-  private apiKey: string
-  private mockMode: boolean
+  baseUrl: string
+  apiKey: string | undefined
+  mockMode: boolean
 
-  constructor(mockMode = false) {
+  constructor(forceMock = false) {
     this.baseUrl = API_CONFIG.BASE_URL
-    
-    // 使用环境变量中的API密钥
     this.apiKey = API_CONFIG.API_KEY
-    
-    // 如果API密钥为空，尝试直接从环境变量获取
-    if (!this.apiKey && process.env.DEEPSEEK_API_KEY) {
-      console.log('从环境变量直接获取API密钥')
-      this.apiKey = process.env.DEEPSEEK_API_KEY
-    }
-    
+
     // 检查API密钥是否有效
     const hasValidApiKey = this.apiKey && this.apiKey.length > 10 && this.apiKey.startsWith('sk-')
-    
-    // 如果没有有效的API密钥且未启用模拟模式，则自动启用模拟模式
-    if (!hasValidApiKey && !mockMode) {
+
+    // 如果没有有效的API密钥并且没有强制模拟，则启用模拟模式
+    if (!hasValidApiKey && !forceMock) {
       console.warn('未检测到有效的API密钥，自动启用模拟模式')
       this.mockMode = true
     } else {
-      // 使用传入的mockMode参数
-      this.mockMode = mockMode
+      this.mockMode = forceMock
     }
-    
-    console.log('DeepseekAPI initialized:', { 
-      baseUrl: this.baseUrl, 
+
+    // 日志初始化信息
+    console.log('DeepseekAPI initialized:', {
+      baseUrl: this.baseUrl,
       mockMode: this.mockMode,
       hasApiKey: !!this.apiKey,
-      apiKeyLength: this.apiKey ? this.apiKey.length : 0,
-      apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 8) : 'none',
-      hasValidApiKey
+      apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 4) + '...' : 'none'
     })
-    
-    // 确保 API 密钥格式正确
+
+    // 检查API密钥格式
     if (this.apiKey && !this.apiKey.startsWith('sk-')) {
       console.warn('API 密钥格式可能不正确，应该以 sk- 开头')
     }
@@ -78,7 +69,7 @@ export class DeepseekAPI {
     }
 
     // 确保 API 密钥格式正确
-    const apiKey = this.apiKey.startsWith('Bearer ') ? this.apiKey : `Bearer ${this.apiKey}`
+    const apiKey = this.apiKey?.startsWith('Bearer ') ? this.apiKey : `Bearer ${this.apiKey}`
     
     // 调试API密钥
     console.log('API密钥检查:', {
@@ -92,7 +83,7 @@ export class DeepseekAPI {
       url: `${this.baseUrl}/chat/completions`,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey.substring(0, 4)}...`
+        'Authorization': `Bearer ${this.apiKey?.substring(0, 4)}...`
       },
       body: requestBody
     })
