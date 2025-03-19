@@ -5,6 +5,26 @@
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <div class="flex items-center justify-between">
           <h1 class="text-xl font-semibold text-gray-800">AI 助手</h1>
+          <div class="flex items-center space-x-2">
+            <button 
+              @click="clearConversation" 
+              class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              title="清空对话"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <button 
+              @click="showSettings = true" 
+              class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              title="设置"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -61,6 +81,92 @@
         </div>
       </div>
     </main>
+
+    <!-- 设置部分 -->
+    <div v-if="showSettings" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+        <h2 class="text-xl font-bold mb-4 dark:text-white">设置</h2>
+        
+        <!-- API密钥设置 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            DeepSeek API 密钥
+          </label>
+          <div class="flex">
+            <input 
+              type="password" 
+              v-model="apiKeyInput" 
+              placeholder="sk-..." 
+              class="flex-1 border border-gray-300 dark:border-gray-600 rounded-l-lg p-2 dark:bg-gray-700 dark:text-white"
+            />
+            <button 
+              @click="saveApiKey" 
+              class="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600"
+            >
+              保存
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            API密钥只会保存在您的浏览器本地，不会发送到服务器
+          </p>
+          <div v-if="apiKeyMessage" :class="`text-sm mt-1 ${apiKeyMessageType === 'success' ? 'text-green-500' : 'text-red-500'}`">
+            {{ apiKeyMessage }}
+          </div>
+        </div>
+        
+        <!-- 其他设置 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            模型
+          </label>
+          <select 
+            v-model="settings.model" 
+            class="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 dark:bg-gray-700 dark:text-white"
+          >
+            <option 
+              v-for="model in AVAILABLE_MODELS" 
+              :key="model.value" 
+              :value="model.value"
+            >
+              {{ model.label }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            温度 ({{ settings.temperature }})
+          </label>
+          <input 
+            type="range" 
+            v-model="settings.temperature" 
+            min="0" 
+            max="1" 
+            step="0.1" 
+            class="w-full"
+          />
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>精确</span>
+            <span>创造性</span>
+          </div>
+        </div>
+        
+        <div class="flex justify-end">
+          <button 
+            @click="showSettings = false" 
+            class="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 mr-2"
+          >
+            取消
+          </button>
+          <button 
+            @click="saveSettings" 
+            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+          >
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -95,6 +201,15 @@ const messageList = ref<HTMLDivElement>()
 
 // 创建 API 实例
 const api = new DeepseekAPI()
+
+// API密钥管理
+const apiKeyInput = ref('') 
+const apiKeyMessage = ref('')
+const apiKeyMessageType = ref('success')
+
+// 界面状态
+const isProcessing = ref(false)
+const showSettings = ref(false)
 
 // 方法
 const formatMessage = (content: string) => {
@@ -180,10 +295,53 @@ const handleSendMessage = async () => {
 // 生命周期钩子
 onMounted(() => {
   scrollToBottom()
+  const savedApiKey = localStorage.getItem('deepseek_api_key')
+  if (savedApiKey) {
+    apiKeyInput.value = savedApiKey
+    api.setApiKey(savedApiKey)
+  }
 })
 
 // 监听消息变化，自动滚动
 watch(messages, scrollToBottom, { deep: true })
+
+// 保存API密钥
+function saveApiKey() {
+  try {
+    if (!apiKeyInput.value) {
+      apiKeyMessage.value = '请输入API密钥'
+      apiKeyMessageType.value = 'error'
+      return
+    }
+    
+    if (!apiKeyInput.value.startsWith('sk-')) {
+      apiKeyMessage.value = 'API密钥格式不正确，应该以sk-开头'
+      apiKeyMessageType.value = 'error'
+      return
+    }
+    
+    localStorage.setItem('deepseek_api_key', apiKeyInput.value)
+    api.setApiKey(apiKeyInput.value)
+    
+    apiKeyMessage.value = 'API密钥已保存'
+    apiKeyMessageType.value = 'success'
+    
+    // 3秒后清除消息
+    setTimeout(() => {
+      apiKeyMessage.value = ''
+    }, 3000)
+  } catch (error) {
+    console.error('保存API密钥时出错', error)
+    apiKeyMessage.value = '保存API密钥时出错'
+    apiKeyMessageType.value = 'error'
+  }
+}
+
+// 保存设置
+function saveSettings() {
+  localStorage.setItem('chat_settings', JSON.stringify(settings.value))
+  showSettings.value = false
+}
 </script>
 
 <style>

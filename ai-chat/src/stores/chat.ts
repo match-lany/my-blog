@@ -1,10 +1,17 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { Message, ChatConfig } from '@/types/chat'
 
 export const useChatStore = defineStore('chat', () => {
   // 状态
-  const messages = ref<Message[]>([])
+  const messages = ref<Message[]>([
+    {
+      id: 1,
+      content: '你好！我是 AI 助手，有什么我可以帮助你的吗？',
+      isUser: false,
+      pending: false
+    }
+  ])
   
   const config = ref<ChatConfig>({
     model: 'deepseek-reasoner',  // 固定使用深度思考模型
@@ -61,7 +68,12 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function clearMessages() {
-    messages.value = []
+    messages.value = [{
+      id: 1,
+      content: '你好！我是 AI 助手，有什么我可以帮助你的吗？',
+      isUser: false,
+      pending: false
+    }]
   }
 
   return {

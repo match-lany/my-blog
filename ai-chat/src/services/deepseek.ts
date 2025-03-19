@@ -23,6 +23,13 @@ export class DeepseekAPI {
     this.baseUrl = API_CONFIG.BASE_URL
     this.apiKey = API_CONFIG.API_KEY
 
+    // 尝试从localStorage加载API密钥
+    const savedApiKey = localStorage.getItem('deepseek_api_key')
+    if (savedApiKey) {
+      console.log('从localStorage加载API密钥')
+      this.apiKey = savedApiKey
+    }
+
     // 检查API密钥是否有效
     const hasValidApiKey = this.apiKey && this.apiKey.length > 10 && this.apiKey.startsWith('sk-')
 
@@ -46,6 +53,35 @@ export class DeepseekAPI {
     if (this.apiKey && !this.apiKey.startsWith('sk-')) {
       console.warn('API 密钥格式可能不正确，应该以 sk- 开头')
     }
+  }
+
+  // 设置API密钥
+  setApiKey(apiKey: string): void {
+    if (!apiKey) {
+      console.warn('API密钥为空')
+      this.mockMode = true
+      return
+    }
+
+    this.apiKey = apiKey
+    
+    // 检查API密钥是否有效
+    const hasValidApiKey = this.apiKey && this.apiKey.length > 10 && this.apiKey.startsWith('sk-')
+    
+    if (hasValidApiKey) {
+      console.log('API密钥已设置，退出模拟模式')
+      this.mockMode = false
+    } else {
+      console.warn('设置的API密钥无效，仍然使用模拟模式')
+      this.mockMode = true
+    }
+    
+    // 打印API密钥状态（不显示完整密钥）
+    console.log('API密钥已更新:', {
+      hasApiKey: !!this.apiKey,
+      apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 4) + '...' : 'none',
+      mockMode: this.mockMode
+    })
   }
 
   async chatCompletion(
