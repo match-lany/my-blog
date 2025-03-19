@@ -1,7 +1,5 @@
 import { API_CONFIG } from '@/config/api'
 import type { ChatConfig } from '@/types/chat'
-import {API_CONFIG} from '@/config/api'
-import type {Message, UserMessage, AssistantMessage} from '@/types/chat'
 
 // 调试环境变量
 console.log('环境变量检查 (deepseek.ts):', {
